@@ -45,6 +45,9 @@ void sList_destroy(sList* list) {
 
         if (list->destroy != NULL) { list->destroy(data); }
     }
+
+    list->head = list->tail = NULL;
+    list->destroy = NULL;
 }
 
 /* ================================================================ */

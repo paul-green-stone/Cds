@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-typedef struct node {
+struct node {
 
     void* data;
     struct node* next;
