@@ -24,7 +24,7 @@ void Stack_init(Stack* stack, void (*destroy)(void* data));
  * Destroys the stack specified by `stack`. No other operations are
  * permitted after calling `Stack_destroy` unless `Stack_init` is called again.
  * The `Stack_destroy` operation removes all elements from a stack and calls the function passed
- * as `destroy` to stack_init once for each element as it is removed, provided
+ * as `destroy` to `Stack_init` once for each element as it is removed, provided
  * destroy was not set to `NULL`.
  * 
  * @return None.
