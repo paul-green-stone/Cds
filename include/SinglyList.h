@@ -20,6 +20,7 @@ typedef struct {
     Node* tail;
 
     void (*destroy)(void* data);
+    int (*match)(const void* ket1, const void* key2);
 } sList;
 
 /* ================================================================ */
@@ -105,7 +106,7 @@ Node* sList_find(const sList* list, const void* data, int (*match)(const void* k
  * The caller takes ownership of the returned data pointer and is responsible
  * for freeing its associated memory when no longer needed.
  * 
- * @return A pointer to the data that was stored in the removed node, or NULL if the node is invalid.
+ * @return A pointer to the data that was stored in the removed node, or `NULL` if the node is invalid.
  */
 void* sList_remove(sList* list, Node* node);
 
