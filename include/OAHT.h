@@ -47,7 +47,7 @@ int HT_insert(HT* ht, const void* data);
  * @return A pointer to the data that was stored in the removed element, or `NULL`
  * if no element with the specified `key` is found.
  */
-void* HT_remove(HT* ht, const char* data);
+void* HT_remove(HT* ht, const void* data);
 
 /**
  * Finds the element matching `data` in the hash table specified by `ht`.
@@ -58,4 +58,4 @@ void* HT_remove(HT* ht, const char* data);
  * 
  * @return A pointer to the found data, or `NULL` if the key was not found.
  */
-void* HT_lookup(const HT* ht, const char* data);
+void* HT_lookup(const HT* ht, const void* data);

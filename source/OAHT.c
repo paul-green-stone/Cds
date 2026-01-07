@@ -70,7 +70,7 @@ int HT_insert(HT* ht, const void* data) {
     return -1;
 }
 
-void* HT_remove(HT* ht, const char* data) {
+void* HT_remove(HT* ht, const void* data) {
 
     int hash_code;
     void* _data = NULL;
@@ -89,12 +89,15 @@ void* HT_remove(HT* ht, const char* data) {
             ht->table[hash_code] = ht->vacated;
             ht->size--;
             /* ======== */
-            return 0;
+            break ;
         }
     }
+
+    /* ======== */
+    return _data;
 }
 
-void* HT_lookup(const HT* ht, const char* data) {
+void* HT_lookup(const HT* ht, const void* data) {
 
     int hash_code;
     void* _data = NULL;
