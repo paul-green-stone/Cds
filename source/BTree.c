@@ -8,18 +8,11 @@
 /* ============================ STATIC ============================ */
 /* ================================================================ */
 
-BTreeNode* BTN_match(BTreeNode* node, int (*match)(const void* data1, const void* data2), const void* data) {
-
-    if (node == NULL) {
-        return NULL;
-    }
-}
-
 int BTree_init(BTree* tree, void (*destroy)(void* data)) {
 
     tree->size = 0;
     tree->compare = NULL;
-    tree->destroy = NULL;
+    tree->destroy = destroy;
     tree->root = NULL;
 }
 
@@ -177,7 +170,7 @@ int BTree_merge(BTree* merge, BTree* left, BTree* right, const void* data) {
     merge->root->left = left->root;
     merge->root->right = right->root;
 
-    merge->size = merge->size += left->size + right->size;
+    merge->size += left->size + right->size;
 
     left->root = NULL;
     left->size = 0;
