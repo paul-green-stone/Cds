@@ -90,7 +90,7 @@ void* Heap_extract(Heap* heap) {
         heap->tree = NULL;
         heap->size = 0;
         /* ======== */
-        return NULL;
+        return data;
     }
 
     /* Copy the last node to the top */
