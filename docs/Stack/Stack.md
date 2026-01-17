@@ -9,11 +9,11 @@ efficient stack operations. The stack supports basic operations like initializat
 
 ## Table of Contents
 
-1. [Overview](#Overview)
-2. [Features](#Features)
-3. [Installation](#Installation)
-4. [Usage](#Usage)
-5. [Example](#Example)
+1. [Overview](#Overview-eyes)
+2. [Features](#Features-rocket)
+3. [Installation](#Installation-hammer_and_wrench)
+4. [Usage](#Usage-gear)
+5. [Example](#Example-computer)
 6. [Contribute](#Contribute)
 
 ## Overview :eyes:
