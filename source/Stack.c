@@ -1,18 +1,18 @@
 #include "../include/Stack.h"
 
-void Stack_init(Stack* stack, void (*destroy)(void* data)) {
-    sList_init(stack, destroy);
+StackResult Stack_init(Stack* stack, void (*destroy)(void* data)) {
+    return sList_init(stack, destroy, NULL);
 }
 
 /* ================================================================ */
 
-void Stack_destroy(Stack* stack) {
-    sList_destroy(stack);
+StackResult Stack_destroy(Stack* stack) {
+    return sList_destroy(stack);
 }
 
 /* ================================================================ */
 
-int Stack_push(Stack* stack, const void* data) {
+StackResult Stack_push(Stack* stack, void* data) {
     return sList_insert_last(stack, data);
 }
 
@@ -25,9 +25,17 @@ void* Stack_pop(Stack* stack) {
 /* ================================================================ */
 
 const void* Stack_peek(const Stack* stack) {
+
+    Stack* mutable = stack;
+
+    if (stack == NULL) {
+        return NULL;
+    }
     
     if (stack->size > 0) {
-        return stack->tail->data;
+        mutable->last_error = SLIST_ERR_EMPTY;
+        /* ======== */
+        return sNode_data(stack->tail);
     }
 
     /* ======== */

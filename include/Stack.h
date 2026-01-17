@@ -1,9 +1,21 @@
-#ifndef _STACK_H
-#define _STACK_H
+#ifndef STACK_H
+#define STACK_H
 
 #include "SinglyList.h"
 
 typedef sList Stack;
+typedef sListResult StackResult;
+
+/**
+ * Retrieves a human-readable error message corresponding to the last error encountered by
+ * the stack. The error message is based on the last operation performed on the list and its result.
+ * 
+ * @param list A pointer to the singly linked list from which the last error message will be retrieved.
+ * If the list is `NULL`, the function will return `NULL`.
+ * 
+ * @return A pointer to a string containing the description of the last error encountered.
+ */
+#define Stack_get_last_error sList_get_last_error
 
 /**
  * Initializes the stack specified by `stack`. This operation must be
@@ -16,9 +28,14 @@ typedef sList Stack;
  * dynamically allocated member as well as for the structure itself. For a stack containin
  * data that should not be freed, destroy should be set to `NULL`.
  * 
- * @return None.
+ * @param stack The stack to initialize.
+ * @param destroy The function used to free the data in each stack element when the stack is destroyed.
+ * 
+ * @note On failure, `last_error` is set to indicate the reason.
+ *  
+ * @return `SLIST_OK` on success, error code otherwise.
  */
-void Stack_init(Stack* stack, void (*destroy)(void* data));
+StackResult Stack_init(Stack* stack, void (*destroy)(void* data));
 
 /**
  * Destroys the stack specified by `stack`. No other operations are
@@ -27,9 +44,13 @@ void Stack_init(Stack* stack, void (*destroy)(void* data));
  * as `destroy` to `Stack_init` once for each element as it is removed, provided
  * destroy was not set to `NULL`.
  * 
- * @return None.
+ * @param stack The stack to destroy.
+ * 
+ * @note On failure, `last_error` is set to indicate the reason.
+ * 
+ * @return `SLIST_OK` on success, error code otherwise.
  */
-void Stack_destroy(Stack* stack);
+StackResult Stack_destroy(Stack* stack);
 
 /**
  * Pushes an element onto the stack specified by `stack`. The new
@@ -37,9 +58,14 @@ void Stack_destroy(Stack* stack);
  * remain valid as long as the element remains in the stack. It is the responsibility of
  * the caller to manage the storage associated with data.
  * 
- * @return `0` if pushing the element is successful, or `–1` otherwise.
+ * @param stack The stack to push the element onto.
+ * @param data A pointer to the data to store in the stack.
+ * 
+ * @note On failure, `last_error` is set to indicate the reason.
+ * 
+ * @return `SLIST_OK` on success, error code otherwise.
  */
-int Stack_push(Stack* stack, const void* data);
+StackResult Stack_push(Stack* stack, void* data);
 
 /**
  * Pops an element off the stack specified by `stack`. It is the
@@ -47,6 +73,10 @@ int Stack_push(Stack* stack, const void* data);
  * The caller takes ownership of the returned data pointer and must free it using the
  * `destroy` function that was specified during stack initialization,
  * or manage it appropriately based on how the data was originally allocated.
+ * 
+ * @param stack The stack to pop the element from.
+ * 
+ * @note On failure, `last_error` is set to indicate the reason.
  * 
  * @return A pointer to the data that was stored in the stack, or `NULL` if the stack is empty.
  */
@@ -58,10 +88,13 @@ void* Stack_pop(Stack* stack);
  * remains valid as long as the element remains in the stack,
  * and the caller should not modify or free the data through this pointer.
  * 
+ * @param stack The stack to peek at.
+ * 
+ * @note On failure, `last_error` is set to indicate the reason.
+ * 
  * @return A pointer to the data stored in the top element of the stack specified by stack, or `NULL` if the stack is empty.
-
  */
 const void* Stack_peek(const Stack* stack); 
 
-#endif /* _STACK_H */
+#endif /* STACK_H */
 
