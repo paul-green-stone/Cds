@@ -8,13 +8,13 @@ A simple, efficient, and flexible implementation of singly linked lists in C, wi
 
 ## Table of Contents
 
-1. [Overview](#Overview)
-2. [Features](#Features)
-3. [Installation](#Installation)
-4. [Usage](#Usage)
-5. [API Documentation](#API-Documentation)
-6. [Error Handling](#Error-Handling)
-7. [Example](#Example)
+1. [Overview](#Overview-eyes)
+2. [Features](#Features-rocket)
+3. [Installation](#Installation-hammer_and_wrench)
+4. [Usage](#Usage-gear)
+5. [API Documentation](#API-Documentation-book)
+6. [Error Handling](#Error-Handling-x)
+7. [Example](#Example-computer)
 8. [Contribute](#Contribute)
 
 ## Overview :eyes:
@@ -126,7 +126,7 @@ And then you can extract data with the function `sNode_data`:
 if (node) { printf("Found: %d\n", *((int*) sNode_data(node))); }
 ```
 
-### :books: API Documentation
+### API Documentation :books:
 
 ```c
 sListResult sList_init(sList* list, void (*destroy)(void* data), int (*match)(const void* key1, const void* key2));

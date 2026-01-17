@@ -114,7 +114,7 @@ if (res != SLIST_OK) {
 
 ## Example :computer:
 
-Data you store in a stack can be as complex as you need it to be. Refer to the [Usage](../linked-lists/Singly-Linked.md#example-computer) section on how to write more advanced data for a container.
+Data you store in a stack can be as complex as you need it to be. Refer to the [example](../linked-lists/Singly-Linked.md#example-computer) section on how to write more advanced data for a container.
 
 ## Contribute
 
