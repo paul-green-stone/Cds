@@ -24,16 +24,14 @@ void* Stack_pop(Stack* stack) {
 
 /* ================================================================ */
 
-const void* Stack_peek(const Stack* stack) {
-
-    Stack* mutable = stack;
+const void* Stack_peek(Stack* stack) {
 
     if (stack == NULL) {
         return NULL;
     }
     
     if (stack->size > 0) {
-        mutable->last_error = SLIST_ERR_EMPTY;
+        stack->last_error = SLIST_ERR_EMPTY;
         /* ======== */
         return sNode_data(stack->tail);
     }

@@ -10,7 +10,7 @@ typedef sListResult StackResult;
  * Retrieves a human-readable error message corresponding to the last error encountered by
  * the stack. The error message is based on the last operation performed on the list and its result.
  * 
- * @param list A pointer to the singly linked list from which the last error message will be retrieved.
+ * @param list A pointer to the stack from which the last error message will be retrieved.
  * If the list is `NULL`, the function will return `NULL`.
  * 
  * @return A pointer to a string containing the description of the last error encountered.
@@ -92,9 +92,9 @@ void* Stack_pop(Stack* stack);
  * 
  * @note On failure, `last_error` is set to indicate the reason.
  * 
- * @return A pointer to the data stored in the top element of the stack specified by stack, or `NULL` if the stack is empty.
+ * @return A pointer to the data stored in the top element of the stack, or `NULL` if the stack is empty.
  */
-const void* Stack_peek(const Stack* stack); 
+const void* Stack_peek(Stack* stack); 
 
 #endif /* STACK_H */
 
