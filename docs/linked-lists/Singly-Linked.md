@@ -297,7 +297,7 @@ if (b) {
 }
 ```
 
-If you don't want to find a book by its ISBN10—for example—you can supply another comparison function to sList_find, which will use it for that search only:
+If you don't want to find a book by its ISBN10 — for example — you can supply another comparison function to `sList_find`, which will use it for that search only:
 
 ```C
 int cmp_by_author(const void* book, const void* author) {
