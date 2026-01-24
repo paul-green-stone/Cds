@@ -43,7 +43,7 @@ typedef struct {
  * @param destroy  Optional destructor called on each element during destroy.
  * @param match    Optional comparison function used by search operations.
  * 
- * @return `SLIST_OK` on success, error code otherwise.
+ * @return `CONTAINER_SUCCESS` on success, error code otherwise.
  */
 int sList_init(sList* list, void (*destroy)(void* data), int (*match)(const void* key1, const void* key2));
 
@@ -57,7 +57,7 @@ int sList_init(sList* list, void (*destroy)(void* data), int (*match)(const void
  * 
  * @param list Pointer to the list to destroy.
  * 
- * @return `SLIST_OK` on success, error code otherwise.
+ * @return `CONTAINER_SUCCESS` on success, error code otherwise.
  */
 int sList_destroy(sList* list);
 
@@ -73,7 +73,7 @@ int sList_destroy(sList* list);
  * @param list Pointer to the list.
  * @param data Pointer to user-managed data.
  * 
- * @return `SLIST_OK` on success, error code otherwise.
+ * @return `CONTAINER_SUCCESS` on success, error code otherwise.
  */
 int sList_insert_last(sList* list, void* data);
 
@@ -89,7 +89,7 @@ int sList_insert_last(sList* list, void* data);
  * @param list Pointer to the list.
  * @param data Pointer to user-managed data.
  * 
- * @return `SLIST_OK` on success, error code otherwise.
+ * @return `CONTAINER_SUCCESS` on success, error code otherwise.
  */
 int sList_insert_first(sList* list, void* data);
 
@@ -105,7 +105,7 @@ int sList_insert_first(sList* list, void* data);
  * @param data  Pointer to a location where a pointer to the
  *              removed element's data will be stored.
  * 
- * @return `SLIST_OK` on success, error code otherwise.
+ * @return `CONTAINER_SUCCESS` on success, error code otherwise.
  */
 int sList_remove_last(sList* list, void** data);
 
@@ -121,7 +121,7 @@ int sList_remove_last(sList* list, void** data);
  * @param data  Pointer to a location where a pointer to the
  *              removed element's data will be stored.
  * 
- * @return `SLIST_OK` on success, error code otherwise.
+ * @return `CONTAINER_SUCCESS` on success, error code otherwise.
  */
 int sList_remove_first(sList* list, void** data);
 
@@ -142,7 +142,7 @@ int sList_remove_first(sList* list, void** data);
  *              node will be stored upon success
  * @param match Optional match override.
  * 
- * @return `SLIST_OK` on success, error code otherwise.
+ * @return `CONTAINER_SUCCESS` on success, error code otherwise.
  */
 int sList_find(const sList* list, const void* data, sNode** node, int (*match)(const void* key1, const void* key2));
 
@@ -159,7 +159,7 @@ int sList_find(const sList* list, const void* data, sNode** node, int (*match)(c
  * @param data  Pointer to a location where a pointer to the removed
  *              node's data will be stored upon success.
  * 
- * @return `SLIST_OK` on success, error code otherwise.
+ * @return `CONTAINER_SUCCESS` on success, error code otherwise.
  */
 int sList_remove(sList* list, sNode* node, void** data);
 
@@ -177,7 +177,7 @@ int sList_remove(sList* list, sNode* node, void** data);
  * @param node Existing node (must belong to list).
  * @param data Pointer to user-managed data.
  * 
- * @return `SLIST_OK` on success, error code otherwise.
+ * @return `CONTAINER_SUCCESS` on success, error code otherwise.
  */
 int sList_insert_after(sList* list, sNode* node, void* data);
 
@@ -195,7 +195,7 @@ int sList_insert_after(sList* list, sNode* node, void* data);
  * @param node Existing node (must belong to list).
  * @param data Pointer to user-managed data.
  * 
- * @return `SLIST_OK` on success, error code otherwise.
+ * @return `CONTAINER_SUCCESS` on success, error code otherwise.
  */
 int sList_insert_before(sList* list, sNode* node, void* data);
 
