@@ -241,7 +241,7 @@ int sList_init(sList* container, void (*destroy)(void* data), int (*match)(const
     container->match = match;
 
     /* ======== */
-    return 0;
+    return CONTAINER_SUCCESS;
 }
 
 /* ================================================================ */
@@ -275,7 +275,7 @@ int sList_destroy(sList* container) {
     container->match = NULL;
 
     /* ======== */
-    return 0;
+    return CONTAINER_SUCCESS;
 }
 
 /* ================================================================ */
@@ -315,7 +315,7 @@ int sList_insert_last(sList* container, void* data) {
     _lsize(container)++;
 
     /* ======== */
-    return 0;
+    return CONTAINER_SUCCESS;
 }
 
 /* ================================================================ */
@@ -353,7 +353,7 @@ int sList_insert_first(sList* container, void* data) {
     _lsize(container)++;
 
     /* ======== */
-    return 0;
+    return CONTAINER_SUCCESS;
 }
 
 /* ================================================================ */
@@ -403,7 +403,7 @@ int sList_remove_last(sList* container, void** data) {
     }
 
     /* ======== */
-    return 0;
+    return CONTAINER_SUCCESS;
 }
 
 /* ================================================================ */
@@ -411,7 +411,7 @@ int sList_remove_last(sList* container, void** data) {
 int sList_remove_first(sList* container, void** data) {
 
     sNode* node = NULL;
-    int exit_code = 0;
+    int exit_code = CONTAINER_SUCCESS;
     /* ======== */
 
     if (container == NULL) { return CONTAINER_ERR_NULL_PTR; }
@@ -449,7 +449,7 @@ int sList_remove_first(sList* container, void** data) {
         
         _lerror(container) = CONTAINER_ERROR_EMPTY;
         /* ======== */
-        return CONTAINER_ERROR_EMPTY;
+        exit_code = CONTAINER_ERROR_EMPTY;
     }
 
     /* ======== */
@@ -462,7 +462,7 @@ int sList_find(const sList* container, const void* data, sNode** dest, int (*mat
 
     sNode* prev = NULL;
     sNode* cached_node = NULL;
-    int status = CONTAINER_SUCCESS;
+    int exit_code = CONTAINER_SUCCESS;
     *dest = NULL;
     /* ======== */
 
@@ -527,11 +527,11 @@ int sList_find(const sList* container, const void* data, sNode** dest, int (*mat
     if (*dest == NULL) {
 
         _lerror(container) = CONTAINER_ERROR_NOT_FOUND;
-        status = CONTAINER_ERROR_NOT_FOUND;
+        exit_code = CONTAINER_ERROR_NOT_FOUND;
     }
 
     /* ======== */
-    return status;
+    return exit_code;
 }
 
 /* ================================================================ */
@@ -600,7 +600,7 @@ int sList_remove(sList* container, sNode* node, void** data) {
     _lerror(container) = 0;
 
     /* ======== */
-    return 0;
+    return CONTAINER_SUCCESS;
 }
 
 /* ================================================================ */
@@ -649,7 +649,7 @@ int sList_insert_after(sList* container, sNode* node, void* data) {
     _lsize(container)++;
 
     /* ======== */
-    return 0;
+    return CONTAINER_SUCCESS;
 }
 
 /* ================================================================ */
@@ -712,7 +712,7 @@ int sList_insert_before(sList* container, sNode* node, void* data) {
     _lsize(container)++;
 
     /* ======== */
-    return 0;
+    return CONTAINER_SUCCESS;
 }
 
 const char* sList_error(const sList* container) {
