@@ -1,16 +1,18 @@
 #include "../include/Set.h"
 
-void Set_init(Set* set, int (*match)(const void* key1, const void* key2), void (*destroy)(void* data)) {
-
-    sList_init(set, destroy); 
-    set->match = match;
+int Set_init(Set* set, int (*match)(const void* key1, const void* key2), void (*destroy)(void* data)) {
+    return sList_init(set, destroy, match);
 }
 
-void Set_destroy(Set* set) {
-    sList_destroy(set);
+/* ================================================================ */
+
+int Set_destroy(Set* set) {
+    return sList_destroy(set);
 }
 
-int Set_insert(Set* set, const void* data) {
+/* ================================================================ */
+
+int Set_insert(Set* set, void* data) {
 
     /* Do not allow the insertion of duplicate */
     if (Set_is_member(set, data)) {
@@ -20,109 +22,148 @@ int Set_insert(Set* set, const void* data) {
     /* ======== */
     return sList_insert_last(set, data);
 }
+/* ================================================================ */
 
-void* Set_remove(Set* set, const void* data) {
+int Set_remove(Set* set, const void* data) {
 
-    Node* node = sList_find(set, data, set->match);
+    sNode* node = NULL;
     void* _data = NULL;
 
-    if (node) {
-        _data = sList_remove(set, node);
-    }
-
+    int exit_code = CONTAINER_SUCCESS;
     /* ======== */
-    return _data;
-}
+    
+    exit_code = sList_find(set, data, &node, NULL);
 
-int Set_union(Set* setu, const Set* set1, const Set* set2) {
+    if (node != NULL) {
+        exit_code = sList_remove(set, node, &_data);
 
-    Set_init(setu, set1->match, NULL);
-
-    for (Node* node = set1->head; node != NULL; node = node->next) {
-
-        if (sList_insert_last(setu, node->data) == -1) {
-
-            Set_destroy(setu);
-            /* ======== */
-            return 1;
+        if (set->destroy != NULL) {
+            set->destroy(_data);
         }
     }
 
-    for (Node* node = set2->head; node != NULL; node = node->next) {
+    /* ======== */
+    return exit_code;
+}
 
-        if (Set_is_member(set1, node->data)) {
+/* ================================================================ */
+
+int Set_union(Set* setu, const Set* set1, const Set* set2) {
+
+    int exit_code = CONTAINER_SUCCESS;
+    /* ======== */
+
+    if ((exit_code = Set_init(setu, set1->match, NULL)) != CONTAINER_SUCCESS) {
+        return exit_code;
+    }
+
+    for (sNode* node = sList_head(set1); node != NULL; node = sNode_next(node)) {
+
+        if ((exit_code = sList_insert_last(setu, sNode_data(node))) != CONTAINER_SUCCESS) {
+
+            Set_destroy(setu);
+            /* ======== */
+            return exit_code;
+        }
+    }
+
+    for (sNode* node = sList_head(set2); node != NULL; node = sNode_next(node)) {
+
+        if (Set_is_member(set1, sNode_data(node))) {
             continue ;
         }
         else {
 
-            if (sList_insert_last(setu, node->data) == -1) {
+            if ((exit_code = sList_insert_last(setu, sNode_data(node))) != CONTAINER_SUCCESS) {
                 
                 Set_destroy(setu);
                 /* ======== */
-                return 1;
+                return exit_code;
             }
         }
     }
 
     /* ======== */
-    return 0;
+    return CONTAINER_SUCCESS;
 }
+
+/* ================================================================ */
 
 int Set_intersection(Set* seti, const Set* set1, const Set* set2) {
 
+    int exit_code = CONTAINER_SUCCESS;
+    /* ======== */
+
     Set_init(seti, set1->match, NULL);
 
-    for (Node* node = set1->head; node != NULL; node = node->next) {
+    for (sNode* node = sList_head(set1); node != NULL; node = sNode_next(node)) {
 
-        if (Set_is_member(set2, node->data)) {
+        if (Set_is_member(set2, sNode_data(node))) {
 
-            if (sList_insert_last(seti, node->data) == -1) {
+            if ((exit_code = sList_insert_last(seti, sNode_data(node))) != CONTAINER_SUCCESS) {
 
                 Set_destroy(seti);
                 /* ========= */
-                return -1;
+                return exit_code;
             }
         }
     }
 
     /* ======== */
-    return 0;
+    return exit_code;
 }
+
+/* ================================================================ */
 
 int Set_difference(Set* setd, const Set* set1, const Set* set2) {
 
+    int exit_code = CONTAINER_SUCCESS;
+    /* ======== */
+
     Set_init(setd, set1->match, NULL);
 
-    for (Node* node = set1->head; node != NULL; node = node->next) {
+    for (sNode* node = sList_head(set1); node != NULL; node = sNode_next(node)) {
 
-        if (!Set_is_member(set2, node->data)) {
+        if (!Set_is_member(set2, sNode_data(node))) {
 
-            if (sList_insert_last(setd, node->data) == -1) {
+            if ((exit_code = sList_insert_last(setd, sNode_data(node))) != CONTAINER_SUCCESS) {
 
                 Set_destroy(setd);
                 /* ========= */
-                return -1;
+                return exit_code;
             }
         }
     }
 
     /* ======== */
-    return 0;    
+    return exit_code;    
 }
 
+/* ================================================================ */
+
 int Set_is_member(const Set* set, const void* data) {
-    return sList_find(set, data, set->match) != NULL ? 1 : 0;
+
+    sNode* node =  NULL;
+    /* ======== */
+    return sList_find(set, data, &node, NULL) == CONTAINER_SUCCESS ? 1 : 0;
 }
+
+/* ================================================================ */
 
 int Set_is_subset(const Set* set1, const Set* set2) {
 
-    if (set1->size > set2->size) {
+    /* An empty set is a subset of any other */
+    if ((set1 == NULL || set2 == NULL) || ((set1 == NULL) && (set2 == NULL))) {
+        return 1;
+    }
+
+    if (sList_size(set1) > sList_size(set2)) {
         return 0;
     }
 
-    for (Node* node = set1->head; node != NULL; node = node->next) {
+    for (sNode* node = sList_head(set1); node != NULL; node = sNode_next(node)) {
 
-        if (!Set_is_member(set2, node->data)) {
+        if (!Set_is_member(set2, sNode_data(node))) {
             return 0;
         }
     }
@@ -131,11 +172,23 @@ int Set_is_subset(const Set* set1, const Set* set2) {
     return 1;
 }
 
+/* ================================================================ */
+
 int Set_is_equal(const Set* set1, const Set* set2) {
 
-    if (set1->size != set2->size) {
+    /* Two empty sets are equal */
+    if ((set1 == NULL) && (set2 == NULL)) {
+        return 1;
+    }
+
+    if (((set1 == NULL) && (set2 != NULL)) || ((set1 != NULL) && (set2 == NULL))) {
         return 0;
     }
 
+    if (sList_size(set1) > sList_size(set2)) {
+        return 0;
+    }
+
+    /* ======== */
     return Set_is_subset(set1, set2);
 }
