@@ -3,101 +3,204 @@
 
 #include "../include/CHT.h"
 
-int HT_init(HT* ht, int slots, int (*hash)(const void* data), int (*match)(const void* key1, const void* key2), void (*destroy)(void* data)) {
+#define _hterror (((struct information*) (container)->_info)->last_error_code)
+#define _htbuckets (((struct information*) (container)->_info)->buckets)
+#define _htable (((struct information*) (container)->_info)->table)
+#define _htsize (((struct information*) (container)->_info)->size)
 
-    if ((ht->table = (sList*) malloc(slots * sizeof(sList))) == NULL) {
-        return -1;
+/* ================================================================ */
+/* ============================ STATIC ============================ */
+/* ================================================================ */
+
+static const char* descriptions[] = {
+    "Success",
+    "Container pointer is null",
+    "Failed to allocate memory",
+    "Data pointer is null",
+    "Container is empty",
+    "Node does not belong to this list",
+    "No callback function available",
+    "Data not found",
+    "Container already initialized",
+    "Output pointer is null",
+    "Container has not been initialized",
+    "Data already exists in container"
+};
+
+struct information {
+
+    sList* table;
+
+    ssize_t buckets;
+    ssize_t size;
+
+    int last_error_code;
+};
+
+/* ================================================================ */
+/* ========================== INTERFACE =========================== */
+/* ================================================================ */
+
+void foo(HT* container, void (*print)(void* d)) {
+
+    for (size_t i = 0; i < _htbuckets; i++) {
+        printf("[%ld]: ", i);
+        for (sNode* node = sList_head(&_htable[i]); node != NULL; node = sNode_next(node)) {
+            print(sNode_data(node));
+
+            if (sNode_next(node) != NULL) printf(", ");
+        }
+        printf("\n");
     }
-
-    ht->buckets = slots;
-
-    for (size_t i = 0; i < ht->buckets; i++) {
-        sList_init(&ht->table[i], destroy);
-    }
-
-    ht->hash = hash;
-    ht->match = match;
-    ht->destroy = destroy;
-
-    ht->size = 0;
-
-    /* ======== */
-    return 0;
 }
 
-void HT_destroy(HT* ht) {
+/* ================================================================ */
 
-    for (size_t i = 0; i < ht->buckets; i++) {
-        sList_destroy(&ht->table[i]);
-    }
+int HT_init(HT* container, int buckets, int (*hash)(const void* data), int (*match)(const void* key1, const void* key2), void (*destroy)(void* data)) {
 
-    free(ht->table);
-
-    memset(ht, 0, sizeof(HT));
-}
-
-int HT_insert(HT* ht, const void* data) {
-
-    int hash_code;
-    int ret_code;
+    struct information* info = NULL;
     /* ======== */
 
-    if (ht->hash == NULL) {
-        return -1;
+    if (container == NULL) { return CONTAINER_ERR_NULL_PTR; }
+
+    if (container->_info != NULL) {
+
+        _hterror = CONTAINER_ERROR_ALREADY_INIT;
+        /* ======== */
+        return CONTAINER_ERROR_ALREADY_INIT;
+    }
+
+    if ((info = calloc(1, sizeof(struct information))) == NULL) {
+        return CONTAINER_ERROR_OUT_OF_MEMORY;
+    }
+
+    if ((info->table = calloc(buckets, sizeof(sList))) == NULL) {
+
+        free(info);
+        /* ======== */
+        return CONTAINER_ERROR_OUT_OF_MEMORY;
+    }
+
+    for (size_t i = 0; i < buckets; i++) {
+        sList_init(&info->table[i], destroy, match);
+    }
+
+    info->buckets = buckets;
+
+    container->_info = info;
+    container->hash = hash;
+    container->match = match;
+    container->destroy = destroy;
+
+    /* ======== */
+    return CONTAINER_SUCCESS;
+}
+
+/* ================================================================ */
+
+int HT_destroy(HT* container) {
+
+    if (container == NULL) { return CONTAINER_ERR_NULL_PTR; }
+
+    for (size_t i = 0; i < _htbuckets; i++) {
+        sList_destroy(&_htable[i]);
+    }
+
+    free(_htable);
+    free(container->_info);
+
+    memset(container, 0, sizeof(HT));
+
+    /* ======== */
+    return CONTAINER_SUCCESS;
+}
+
+/* ================================================================ */
+
+int HT_insert(HT* container, void* data) {
+
+    size_t hash_code;
+    int ret_code = CONTAINER_SUCCESS;
+    /* ======== */
+
+    if (container->hash == NULL) {
+        _hterror = CONTAINER_ERROR_NO_CALLBACK;
+        /* ======== */
+        return CONTAINER_ERROR_NO_CALLBACK;
     }
     
     /* Do nothing if the data is already in the table */
-    if (HT_lookup(ht, data) != NULL) {
-        return 1;
+    if (HT_lookup(container, data) != NULL) {
+        _hterror = CONTAINER_ERROR_ALREADY_EXISTS;
+        /* ======== */
+        return CONTAINER_ERROR_ALREADY_EXISTS;
     }
 
-    hash_code = ht->hash(data) % ht->buckets;
+    hash_code = container->hash(data) % _htbuckets;
 
-    if ((ret_code = sList_insert_first(&ht->table[hash_code], data)) == 0) {
-        ht->size++;
+    if ((ret_code = sList_insert_first(&_htable[hash_code], data)) == CONTAINER_SUCCESS) {
+        _htsize++;
     }
 
     /* ======== */
     return ret_code;
 }
 
-void* HT_remove(HT* ht, const char* data) {
+/* ================================================================ */
 
-    int hash_code;
+void* HT_remove(HT* container, const void* data) {
+
+    size_t hash_code;
 
     void* _data = NULL;
-    Node* n;
+    sNode* node;
     /* ======== */
 
-    if (ht->hash == NULL) {
+    if (container->hash == NULL) {
+
+        _hterror = CONTAINER_ERROR_NO_CALLBACK;
+        /* ======== */
         return NULL;
     }
 
-    hash_code = ht->hash(data) % ht->buckets;
+    hash_code = container->hash(data) % _htbuckets;
 
-    if ((n = sList_find(&ht->table[hash_code], data, ht->match)) ==  NULL) {
+    if (sList_find(&_htable[hash_code], data, &node, container->match) != CONTAINER_SUCCESS) {
+
+        _hterror = CONTAINER_ERROR_NOT_FOUND;
+        /* ======== */
         return NULL;
     }
 
-    _data = sList_remove(&ht->table[hash_code], n);
-    ht->size--;
+    sList_remove(&_htable[hash_code], node, &_data);
+    _htsize--;
 
     /* ======== */
     return _data;
 }
 
-void* HT_lookup(const HT* ht, const char* data) {
+/* ================================================================ */
 
-    int hash_code;
-    Node* n = NULL;
+void* HT_lookup(const HT* container, const void* data) {
+
+    size_t hash_code;
+    sNode* node = NULL;
     /* ======== */
 
-    if (ht->hash == NULL) {
+    if (container->hash == NULL) {
+        _hterror = CONTAINER_ERROR_NO_CALLBACK;
+        /* ======== */
         return NULL;
     }
 
-    hash_code = ht->hash(data) % ht->buckets;
+    hash_code = container->hash(data) % _htbuckets;
 
     /* ======== */
-    return (n = sList_find(&ht->table[hash_code], data, ht->match)) == NULL ? NULL : n->data;
+    return (sList_find(&_htable[hash_code], data, &node, container->match)) == CONTAINER_SUCCESS ? sNode_data(node) : NULL;
+}
+
+/* ================================================================ */
+
+const char* HT_error(const HT* container) {
+    return (container ? descriptions[-_hterror] : NULL);
 }
