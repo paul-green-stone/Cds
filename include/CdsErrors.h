@@ -22,8 +22,10 @@ typedef enum {
     CONTAINER_ERROR_ALREADY_INIT = -8,
     /* Returned when output pointer (e.g., data**) is NULL */
     CONTAINER_ERROR_NULL_OUTPUT = -9,
-    /**/
+    /* Returned when container has not been initialized */
     CONTAINER_ERROR_UNINIT = -10,
+    /* Returned when data already exists in the container */
+    CONTAINER_ERROR_ALREADY_EXISTS = -11,
 
 } ContainerError;
 

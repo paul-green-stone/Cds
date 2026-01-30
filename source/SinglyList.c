@@ -62,7 +62,9 @@ static const char* descriptions[] = {
     "No callback function available",
     "Data not found",
     "Container already initialized",
-    "Output pointer is null"
+    "Output pointer is null",
+    "Container has not been initialized",
+    "Data already exists in container"
 };
 
 /* ================================================================ */
