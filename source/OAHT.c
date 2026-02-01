@@ -1,122 +1,326 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../include/CdsErrors.h"
 #include "../include/OAHT.h"
+
+#define _hterror (((struct information*) (container)->_info)->last_error_code)
+#define _htpositions (((struct information*) (container)->_info)->positions)
+#define _htable (((struct information*) (container)->_info)->table)
+#define _htsize (((struct information*) (container)->_info)->size)
+#define _htvacated (((struct information*) (container)->_info)->vacated)
+
+/* ================================================================ */
+/* ============================ STATIC ============================ */
+/* ================================================================ */
 
 static char vacated;
 
-int HT_init(HT* ht, int positions, int (*h1)(const void* key), int (*h2)(const void* key), int (*match)(const void* key1, const void* key2), void (*destroy)(void* data)) {
+static const char* descriptions[] = {
+    "Success",
+    "Container pointer is null",
+    "Failed to allocate memory",
+    "Data pointer is null",
+    "Container is empty",
+    "Node does not belong to this list",
+    "No callback function available",
+    "Data not found",
+    "Container already initialized",
+    "Output pointer is null",
+    "Container has not been initialized",
+    "Data already exists in container"
+};
 
-    if ((ht->table = calloc(positions, sizeof(void*))) == NULL) {
-        return -1;
+/**
+ * `positions` is the number of positions allocated
+ * in the hash table;
+ * 
+ * `vacated` is a pointer that will be initialized to
+ * a special storage location to indicate that a
+ * particular position in the table has had an element
+ * removed from it;
+ * 
+ * `size` is the number of elements currently in the table;
+ * 
+ * `table` is the array in which the elements are stored.
+ */
+
+struct information {
+
+    void** table;
+    void* vacated;
+
+    size_t positions;
+    size_t size;
+
+    int last_error_code;
+};
+
+/* ================================================================ */
+/* ========================== INTERFACE =========================== */
+/* ================================================================ */
+
+void foo(const HT* container) {
+
+    for (size_t i = 0; i < _htpositions; i++) {
+
+        printf("[%ld]: ", i);
+        if (_htable[i]) printf("%d", *((int*) _htable[i]));
+        printf("\n");
     }
-
-    ht->positions = positions;
-    ht->vacated = &vacated;
-
-    ht->h1 = h1;
-    ht->h2 = h2;
-    ht->match = match;
-    ht->destroy = destroy;
-    ht->size = 0;
-
-    /* ======== */
-    return 0;
 }
 
-void HT_destroy(HT* ht) {
+int HT_init(HT* container, size_t positions, size_t (*h1)(const void* key), size_t (*h2)(const void* key), int (*match)(const void* key1, const void* key2), void (*destroy)(void* data)) {
 
-    if (ht->destroy != NULL)  {
+    struct information* info = NULL;
+    /* ======== */
 
-        for (size_t i = 0; i < ht->positions; i++) {
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
 
-            if ((ht->table[i] != NULL) && (ht->table[i] != ht->vacated)) {
-                ht->destroy(ht->table[i]);
-            }
+    if (container->_info != NULL) {
+
+        _hterror = CONTAINER_ERROR_ALREADY_INIT;
+        /* ======== */
+        return CONTAINER_ERROR_ALREADY_INIT;
+    }
+
+    if ((info = calloc(1, sizeof(struct information))) == NULL) {
+        return CONTAINER_ERROR_OUT_OF_MEMORY;
+    }
+
+    if ((info->table = calloc(positions, sizeof(void*))) == NULL) {
+
+        free(info);
+        /* ======== */
+        return CONTAINER_ERROR_OUT_OF_MEMORY;
+    }
+
+    info->positions = positions;
+    info->last_error_code = CONTAINER_SUCCESS;
+    info->size = 0;
+    info->vacated = NULL;
+
+    container->_info = info;
+    container->h1 = h1;
+    container->h2 = h2;
+    container->match = match;
+    container->destroy = destroy;
+
+    /* ======== */
+    return CONTAINER_SUCCESS;
+}
+
+/* ================================================================ */
+
+int HT_destroy(HT* container) {
+
+   if (container == NULL) { return CONTAINER_ERR_NULL_PTR; }
+
+    if (container->_info == NULL) {
+        return CONTAINER_ERROR_UNINIT;
+    }
+
+    for (size_t i = 0; i < _htpositions; i++) {
+
+        if (container->destroy != NULL) {
+            container->destroy(_htable[i]); 
         }
     }
 
-    free(ht->table);
-    memset(ht, 0, sizeof(HT));
+    free(_htable);
+    free(container->_info);
+    /* Mark it uninitialized */
+    container->_info = NULL;
+    
+    memset(container, 0, sizeof(HT));
+
+    /* ======== */
+    return CONTAINER_SUCCESS;
 }
 
-int HT_insert(HT* ht, const void* data) {
+/* ================================================================ */
+
+int HT_insert(HT* container, const void* data) {
 
     int hash_code;
+    void* _data = NULL;
     /* ======== */
 
-    if (ht->size == ht->positions) {
-        return -1;
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
     }
 
-    if (HT_lookup(ht, data) != NULL) {
+    /* ================= The container is initialized ================= */
+    if (container->_info == NULL) {
+        return CONTAINER_ERROR_UNINIT;
+    }
+
+    /* ============ The container has unoccupied positions ============ */
+    if (_htsize == _htpositions) {
+
+        _hterror = CONTAINER_ERROR_OUT_OF_MEMORY;
+        /* ======== */
+        return CONTAINER_ERROR_OUT_OF_MEMORY;
+    }
+
+    /* ========== The container aready has the specified data ========== */
+    if (HT_lookup(container, data, &_data) == CONTAINER_SUCCESS) {
+
+        _hterror = CONTAINER_ERROR_ALREADY_EXISTS;
+        /* ======== */
         return 1;
     }
 
-    for (size_t i = 0; i < ht->positions; i++) {
+    /* ==================== Computing the hash code ==================== */
+    for (size_t i = 0; i < _htpositions; i++) {
 
-        hash_code = (ht->h1(data) + (i * ht->h2(data))) % ht->positions;
+        hash_code = (container->h1(data) + (i * container->h2(data))) % _htpositions;
 
-        if ((ht->table[hash_code] == NULL) || (ht->table[hash_code] == ht->vacated)) {
+        if ((_htable[hash_code] == NULL) || (_htable[hash_code] == _htvacated)) {
 
-            ht->table[hash_code] = (void*) data;
-            ht->size++;
-            /* ======== */
-            return 0;
-        }
-    }
-
-    /* ======== */
-    return -1;
-}
-
-void* HT_remove(HT* ht, const void* data) {
-
-    int hash_code;
-    void* _data = NULL;
-    /* ======== */
-
-    for (size_t i = 0; i < ht->positions; i++) {
-
-        hash_code = (ht->h1(data) + (i * ht->h2(data))) % ht->positions;
-
-        if (ht->table[hash_code] == NULL) {
-            return NULL;
-        }
-        else if (ht->match(ht->table[hash_code], data)) {
-
-            _data = ht->table[hash_code];
-            ht->table[hash_code] = ht->vacated;
-            ht->size--;
+            _htable[hash_code] = (void*) data;
+            _htsize++;
             /* ======== */
             break ;
         }
     }
 
     /* ======== */
-    return _data;
+    return CONTAINER_SUCCESS;
 }
 
-void* HT_lookup(const HT* ht, const void* data) {
+int HT_remove(HT* container, const void* src, void** dst) {
 
+    int exit_code = CONTAINER_ERROR_NOT_FOUND;
     int hash_code;
-    void* _data = NULL;
     /* ======== */
 
-    for (size_t i = 0; i < ht->positions; i++) {
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) { return CONTAINER_ERR_NULL_PTR; }
 
-        hash_code = (ht->h1(data) + (i * ht->h2(data))) % ht->positions;
+    /* ================= The container is initialized ================= */
+    if (container->_info == NULL) {
+        return CONTAINER_ERROR_UNINIT;
+    }
 
-        if (ht->table[hash_code] == NULL) {
-            return NULL;
+    /* ==================== Computing the hash code ==================== */
+    for (size_t i = 0; i < _htpositions; i++) {
+
+        hash_code = (container->h1(src) + (i * container->h2(src))) % _htpositions;
+
+        if (_htable[hash_code] == NULL) {
+
+            _hterror = CONTAINER_ERROR_NOT_FOUND;
+            /* ======== */
+            return CONTAINER_ERROR_NOT_FOUND;
         }
-        else if (ht->match(ht->table[hash_code], data)) {
+        else if (container->match(_htable[hash_code], src) == 1) {
 
-            _data = ht->table[hash_code];
+            *dst = _htable[hash_code];
+            _htable[hash_code] = _htvacated;
+            _htsize--;
+            
+            exit_code = CONTAINER_SUCCESS;
+            /* ======== */
             break ;
         }
     }
 
     /* ======== */
-    return _data;
+    return exit_code;
+}
+
+/* ================================================================ */
+
+int HT_lookup(const HT* container, const void* src, void** dst) {
+
+    int exit_code = CONTAINER_ERROR_NOT_FOUND;
+    int hash_code;
+    /* ======== */
+
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
+
+    /* ================= The container is initialized ================= */
+    if (container->_info == NULL) {
+        return CONTAINER_ERROR_UNINIT;
+    }
+
+    if (src == NULL) {
+
+        _hterror = CONTAINER_ERROR_NULL_DATA;
+        /* ======== */
+        return CONTAINER_ERROR_NULL_DATA;
+    }
+
+    /* ================== The container is not empty ================== */
+    if (_htsize == 0) {
+
+        _hterror = CONTAINER_ERROR_EMPTY;
+        /* ======== */
+        return CONTAINER_ERROR_EMPTY;
+    }
+
+    for (size_t i = 0; i < _htpositions; i++) {
+
+        hash_code = (container->h1(src) + (i * container->h2(src))) % _htpositions;
+
+        if (_htable[hash_code] == NULL) {
+
+            _hterror = (exit_code = CONTAINER_ERROR_NOT_FOUND);
+            /* ======== */
+            break ;
+        }
+        else if (container->match(_htable[hash_code], src) == 1) {
+
+            *dst = _htable[hash_code];
+            _hterror = (exit_code = CONTAINER_SUCCESS);
+            /* ======== */
+            break ;
+        }
+    }
+
+    /* ======== */
+    return exit_code;
+}
+
+/* ================================================================ */
+
+ssize_t HT_size(const HT* container) {
+
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
+
+    /* ================= The container is initialized ================= */
+    if (container->_info == NULL) {
+        return CONTAINER_ERROR_UNINIT;
+    }
+
+    /* ======== */
+    return _htsize;
+}
+
+/* ================================================================ */
+
+const char* HT_error(const HT* container) {
+
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return NULL;
+    }
+
+    /* ================= The container is initialized ================= */
+    if (container->_info == NULL) {
+        return NULL;
+    }
+
+    /* ======== */
+    return descriptions[_hterror];
 }
