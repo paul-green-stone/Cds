@@ -17,7 +17,7 @@ typedef struct {
     void* data;
 } Dict_ent;
 
-int h1_fnv1a(const void* data) {
+size_t h1_fnv1a(const void* data) {
 
     uint32_t hash_code = 0x811c9dc5u;   // FNV offset basis
     uint32_t prime = 0x01000193u;       // FNV prime
@@ -35,7 +35,7 @@ int h1_fnv1a(const void* data) {
     return hash_code;
 }
 
-int h2_djb2(const void* data) {
+size_t h2_djb2(const void* data) {
 
     uint32_t hash_code = 5381;
     int c;
@@ -81,78 +81,117 @@ Dict* Dict_create(int logical_size) {
     return dict;
 }
 
-void Dict_destroy(Dict** dict) {
+/* ================================================================ */
 
-    HT_destroy(*dict);
-    free(*dict);
-    *dict = NULL;
+int Dict_destroy(Dict** container) {
+
+    /* =============== Make sure the container is valid =============== */
+    if (*container == NULL || container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
+
+    HT_destroy(*container);
+    free(*container);
+    *container = NULL;
+
+    /* ======== */
+    return CONTAINER_SUCCESS;
 }
 
-int Dict_insert(Dict* dict, const void* key, void* data) {
+/* ================================================================ */
 
-    Dict_ent* ent = calloc(1, sizeof(Dict_ent));
+int Dict_insert(Dict* container, const void* key, void* _data) {
 
-    if (ent == NULL) {
-        return -1;
+    Dict_ent* ent = NULL;
+    void* data = NULL;
+    /* ======== */
+
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
+
+    /* ================= Make sure key and data valid ================= */
+    if ((key == NULL) || (_data == NULL)) {
+        return CONTAINER_ERROR_NULL_DATA;
+    }
+
+    if ((ent = calloc(1, sizeof(Dict_ent))) == NULL) {
+        return CONTAINER_ERROR_OUT_OF_MEMORY;
     }
 
     ent->key = key;
-    ent->data = data;
+    ent->data = _data;
 
-    if (HT_lookup(dict, (void*) ent) != NULL) {
+    HT_lookup(container, (void*) ent, &data);
+
+    if (data != NULL) {
 
         free(ent);
         /* ======== */
-        return 1;
+        return CONTAINER_ERROR_ALREADY_EXISTS;
     }
 
     /* ======== */
-    return HT_insert(dict, ent);
+    return HT_insert(container, ent);
 }
 
-void* Dict_remove(Dict* dict, const char* key) {
+/* ================================================================ */
+
+int Dict_remove(Dict* container, const char* key, void** _data) {
 
     Dict_ent ent = {key, NULL};
-    void* data = NULL;
     Dict_ent* ret_ent = NULL;
     /* ======== */
 
-    ret_ent = HT_remove(dict, &ent);
-    data = ret_ent->data;
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
 
-    dict->destroy(ret_ent);
+    /* ================= Make sure key and data valid ================= */
+    if ((key == NULL) || (_data == NULL)) {
+        return CONTAINER_ERROR_NULL_DATA;
+    }
+
+    HT_remove(container, &ent, (void**) &ret_ent);
+    
+    if (ret_ent == NULL) {
+        return CONTAINER_ERROR_NOT_FOUND;
+    }
+
+    *_data = ret_ent->data;
+
+    container->destroy(ret_ent);
 
     /* ======== */
-    return data;
+    return CONTAINER_SUCCESS;
 }
 
-void* Dict_lookup(const Dict* dict, const char* key) {
+/* ================================================================ */
+
+int Dict_lookup(const Dict* container, const char* key, void** result) {
 
     Dict_ent ent = {key, NULL};
     /* ======== */
-    return HT_lookup(dict, &ent);
-}
 
-void* Dict_getElm(const Dict* d, int pos_idx) {
-    return d->table[pos_idx] == d->vacated ? NULL : d->table[pos_idx] != NULL ? ((Dict_ent*) d->table[pos_idx])->data : NULL;
-}
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
 
-const char** Dict_keys(const Dict* d) {
+    /* ================= Make sure key and data valid ================= */
+    if ((key == NULL) || (result == NULL)) {
+        return CONTAINER_ERROR_NULL_DATA;
+    }
 
-    const char** keys = NULL;
-    /* ======== */
+    HT_lookup(container, &ent, result);
+    *result = ((Dict_ent*) *result)->data;
 
-    keys = calloc(d->size, sizeof(const char*));
-
-    for (size_t t_idx = 0, k_idx = 0; k_idx < d->size; t_idx++) {
-
-        const char* _ = d->table[t_idx] == d->vacated ? NULL : d->table[t_idx] != NULL ? ((Dict_ent*) d->table[t_idx])->key : NULL;
-
-        if (_) {
-            keys[k_idx++] = _;
-        }
+    if (*result == NULL) {
+        return CONTAINER_ERROR_NOT_FOUND;
     }
 
     /* ======== */
-    return keys;
+    return CONTAINER_SUCCESS;
 }
