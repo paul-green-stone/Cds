@@ -60,16 +60,6 @@ struct information {
 /* ========================== INTERFACE =========================== */
 /* ================================================================ */
 
-void foo(const HT* container) {
-
-    for (size_t i = 0; i < _htpositions; i++) {
-
-        printf("[%ld]: ", i);
-        if (_htable[i]) printf("%d", *((int*) _htable[i]));
-        printf("\n");
-    }
-}
-
 int HT_init(HT* container, size_t positions, size_t (*h1)(const void* key), size_t (*h2)(const void* key), int (*match)(const void* key1, const void* key2), void (*destroy)(void* data)) {
 
     struct information* info = NULL;
@@ -116,8 +106,12 @@ int HT_init(HT* container, size_t positions, size_t (*h1)(const void* key), size
 
 int HT_destroy(HT* container) {
 
-   if (container == NULL) { return CONTAINER_ERR_NULL_PTR; }
+   /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
 
+    /* ================ The container is uninitialized ================ */
     if (container->_info == NULL) {
         return CONTAINER_ERROR_UNINIT;
     }
@@ -131,8 +125,6 @@ int HT_destroy(HT* container) {
 
     free(_htable);
     free(container->_info);
-    /* Mark it uninitialized */
-    container->_info = NULL;
     
     memset(container, 0, sizeof(HT));
 
@@ -164,6 +156,14 @@ int HT_insert(HT* container, const void* data) {
         _hterror = CONTAINER_ERROR_OUT_OF_MEMORY;
         /* ======== */
         return CONTAINER_ERROR_OUT_OF_MEMORY;
+    }
+
+    /* ============== Make sure the methods are available ============== */
+    if ((container->h1 == NULL) || (container->h2 == NULL)) {
+
+        _hterror = CONTAINER_ERROR_NO_CALLBACK;
+        /* ======== */
+        return CONTAINER_ERROR_NO_CALLBACK;
     }
 
     /* ========== The container aready has the specified data ========== */
@@ -204,6 +204,14 @@ int HT_remove(HT* container, const void* src, void** dst) {
     /* ================= The container is initialized ================= */
     if (container->_info == NULL) {
         return CONTAINER_ERROR_UNINIT;
+    }
+
+    /* ============== Make sure the methods are available ============== */
+    if ((container->h1 == NULL) || (container->h2 == NULL)) {
+
+        _hterror = CONTAINER_ERROR_NO_CALLBACK;
+        /* ======== */
+        return CONTAINER_ERROR_NO_CALLBACK;
     }
 
     /* ==================== Computing the hash code ==================== */
@@ -264,6 +272,14 @@ int HT_lookup(const HT* container, const void* src, void** dst) {
         _hterror = CONTAINER_ERROR_EMPTY;
         /* ======== */
         return CONTAINER_ERROR_EMPTY;
+    }
+
+    /* ============== Make sure the methods are available ============== */
+    if ((container->h1 == NULL) || (container->h2 == NULL)) {
+
+        _hterror = CONTAINER_ERROR_NO_CALLBACK;
+        /* ======== */
+        return CONTAINER_ERROR_NO_CALLBACK;
     }
 
     for (size_t i = 0; i < _htpositions; i++) {
