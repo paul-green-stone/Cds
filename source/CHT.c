@@ -3,10 +3,10 @@
 
 #include "../include/CHT.h"
 
-#define _hterror (((struct information*) (container)->_info)->last_error_code)
-#define _htbuckets (((struct information*) (container)->_info)->buckets)
 #define _htable (((struct information*) (container)->_info)->table)
+#define _htbuckets (((struct information*) (container)->_info)->buckets)
 #define _htsize (((struct information*) (container)->_info)->size)
+#define _hterror (((struct information*) (container)->_info)->last_error_code)
 
 /* ================================================================ */
 /* ============================ STATIC ============================ */
@@ -41,28 +41,17 @@ struct information {
 /* ========================== INTERFACE =========================== */
 /* ================================================================ */
 
-void foo(HT* container, void (*print)(void* d)) {
-
-    for (size_t i = 0; i < _htbuckets; i++) {
-        printf("[%ld]: ", i);
-        for (sNode* node = sList_head(&_htable[i]); node != NULL; node = sNode_next(node)) {
-            print(sNode_data(node));
-
-            if (sNode_next(node) != NULL) printf(", ");
-        }
-        printf("\n");
-    }
-}
-
-/* ================================================================ */
-
-int HT_init(HT* container, int buckets, int (*hash)(const void* data), int (*match)(const void* key1, const void* key2), void (*destroy)(void* data)) {
+int HT_init(HT* container, int buckets, size_t (*hash)(const void* data), int (*match)(const void* key1, const void* key2), void (*destroy)(void* data)) {
 
     struct information* info = NULL;
     /* ======== */
 
-    if (container == NULL) { return CONTAINER_ERR_NULL_PTR; }
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
 
+    /* ============== The container has been initialized ============== */
     if (container->_info != NULL) {
 
         _hterror = CONTAINER_ERROR_ALREADY_INIT;
@@ -70,6 +59,7 @@ int HT_init(HT* container, int buckets, int (*hash)(const void* data), int (*mat
         return CONTAINER_ERROR_ALREADY_INIT;
     }
 
+    /* ======================= Memory allocation ======================= */
     if ((info = calloc(1, sizeof(struct information))) == NULL) {
         return CONTAINER_ERROR_OUT_OF_MEMORY;
     }
@@ -81,6 +71,7 @@ int HT_init(HT* container, int buckets, int (*hash)(const void* data), int (*mat
         return CONTAINER_ERROR_OUT_OF_MEMORY;
     }
 
+    /* ====================== Initializing lists ====================== */
     for (size_t i = 0; i < buckets; i++) {
         sList_init(&info->table[i], destroy, match);
     }
@@ -100,7 +91,15 @@ int HT_init(HT* container, int buckets, int (*hash)(const void* data), int (*mat
 
 int HT_destroy(HT* container) {
 
-    if (container == NULL) { return CONTAINER_ERR_NULL_PTR; }
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
+
+    /* ================ The container is uninitialized ================ */
+    if (container->_info == NULL) {
+        return CONTAINER_ERROR_UNINIT;
+    }
 
     for (size_t i = 0; i < _htbuckets; i++) {
         sList_destroy(&_htable[i]);
@@ -121,19 +120,33 @@ int HT_insert(HT* container, void* data) {
 
     size_t hash_code;
     int ret_code = CONTAINER_SUCCESS;
+    void* _data = NULL;
     /* ======== */
 
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
+
+    /* ================= The container is initialized ================= */
+    if (container->_info == NULL) {
+        return CONTAINER_ERROR_UNINIT;
+    }
+
+    /* =============== Make sure the method is available =============== */
     if (container->hash == NULL) {
+
         _hterror = CONTAINER_ERROR_NO_CALLBACK;
         /* ======== */
         return CONTAINER_ERROR_NO_CALLBACK;
     }
     
-    /* Do nothing if the data is already in the table */
-    if (HT_lookup(container, data) != NULL) {
+    /* ======== Do nothing if the data is already in the table ======== */
+    if (HT_lookup(container, data, &_data) == CONTAINER_SUCCESS) {
+        
         _hterror = CONTAINER_ERROR_ALREADY_EXISTS;
         /* ======== */
-        return CONTAINER_ERROR_ALREADY_EXISTS;
+        return 1;
     }
 
     hash_code = container->hash(data) % _htbuckets;
@@ -148,59 +161,122 @@ int HT_insert(HT* container, void* data) {
 
 /* ================================================================ */
 
-void* HT_remove(HT* container, const void* data) {
+int HT_remove(HT* container, const void* src, void** dst) {
 
+    sNode* node = NULL;
+    
     size_t hash_code;
-
-    void* _data = NULL;
-    sNode* node;
     /* ======== */
 
-    if (container->hash == NULL) {
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
+
+    /* ================= The container is initialized ================= */
+    if (container->_info == NULL) {
+        return CONTAINER_ERROR_UNINIT;
+    }
+
+    /* ============== Make sure the methods are available ============== */
+    if ((container->hash == NULL) || (container->match == NULL)) {
 
         _hterror = CONTAINER_ERROR_NO_CALLBACK;
         /* ======== */
-        return NULL;
+        return CONTAINER_ERROR_NO_CALLBACK;
     }
 
-    hash_code = container->hash(data) % _htbuckets;
+    hash_code = container->hash(src) % _htbuckets;
 
-    if (sList_find(&_htable[hash_code], data, &node, container->match) != CONTAINER_SUCCESS) {
+    if (sList_find(&_htable[hash_code], src, &node, container->match) != CONTAINER_SUCCESS) {
 
         _hterror = CONTAINER_ERROR_NOT_FOUND;
         /* ======== */
-        return NULL;
+        return CONTAINER_ERROR_NOT_FOUND;
     }
 
-    sList_remove(&_htable[hash_code], node, &_data);
+    sList_remove(&_htable[hash_code], node, dst);
     _htsize--;
 
     /* ======== */
-    return _data;
+    return CONTAINER_SUCCESS;
 }
 
 /* ================================================================ */
 
-void* HT_lookup(const HT* container, const void* data) {
+int HT_lookup(const HT* container, const void* src, void** dst) {
 
     size_t hash_code;
     sNode* node = NULL;
+    int exit_code = CONTAINER_SUCCESS;
     /* ======== */
 
-    if (container->hash == NULL) {
-        _hterror = CONTAINER_ERROR_NO_CALLBACK;
-        /* ======== */
-        return NULL;
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
     }
 
-    hash_code = container->hash(data) % _htbuckets;
+    /* ================= The container is initialized ================= */
+    if (container->_info == NULL) {
+        return CONTAINER_ERROR_UNINIT;
+    }
+
+    /* =============== Make sure the method is available =============== */
+    if ((container->hash == NULL) || (container->match == NULL)) {
+
+        _hterror = CONTAINER_ERROR_NO_CALLBACK;
+        /* ======== */
+        return CONTAINER_ERROR_NO_CALLBACK;
+    }
+
+    hash_code = container->hash(src) % _htbuckets;
+    printf("Hash code = %d\n", hash_code);
+    if (sList_find(&_htable[hash_code], src, &node, container->match) == CONTAINER_SUCCESS) {
+
+        printf("Hey!\n");
+        *dst = sNode_data(node);
+        _hterror = (exit_code = CONTAINER_SUCCESS);
+    }
+    else {
+        _hterror = (exit_code = CONTAINER_ERROR_NOT_FOUND);
+    }
 
     /* ======== */
-    return (sList_find(&_htable[hash_code], data, &node, container->match)) == CONTAINER_SUCCESS ? sNode_data(node) : NULL;
+    return exit_code;
 }
 
 /* ================================================================ */
 
 const char* HT_error(const HT* container) {
+
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return NULL;
+    }
+
+    /* ================ The container is uninitialized ================ */
+    if (container->_info == NULL) {
+        return NULL;
+    }
+
+    /* ======== */
     return (container ? descriptions[-_hterror] : NULL);
+}
+
+/* ================================================================ */
+
+ssize_t HT_size(const HT* container) {
+
+    /* =============== Make sure the container is valid =============== */
+    if (container == NULL) {
+        return CONTAINER_ERR_NULL_PTR;
+    }
+
+    /* ================ The container is uninitialized ================ */
+    if (container->_info == NULL) {
+        return CONTAINER_ERROR_UNINIT;
+    }
+
+    /* ======== */
+    return _htsize;
 }

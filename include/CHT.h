@@ -6,9 +6,26 @@
 typedef struct hash_table HT;
 
 /**
+ * Returns the number of elements currently stored in the hash table.
  * 
+ * @param ht Pointer to the hash table whose size will be returned.
+ * 
+ * @return  Number of elements in the hash table on success, or a negative
+ *          error code.
  */
-const char* HT_error(const HT* table);
+ssize_t HT_size(const HT* ht);
+
+/**
+ * Returns a human-readable description of the last error that occurred
+ * in the hash table operations.
+ * 
+ * @param ht    Pointer to the hash table whose last error description
+ *              will be returned.
+ * 
+ * @return Constant string describing the last error code stored in the hash table,
+ *         or `NULL` if the container is invalid or uninitialized.
+ */
+const char* HT_error(const HT* ht);
 
 /**
  * Initializes the hash table specified by `ht`.
@@ -45,7 +62,7 @@ const char* HT_error(const HT* table);
  * 
  * @return `CONTAINER_SUCCESS` if initializing the hash table is successful, error code otherwise.
  */
-int HT_init(HT* ht, int slots, int (*hash)(const void* key), int (*match)(const void* key1, const void* key2), void (*destroy)(void* data));
+int HT_init(HT* ht, int slots, size_t (*hash)(const void* key), int (*match)(const void* key1, const void* key2), void (*destroy)(void* data));
 
 /**
  * Destroys the hash table specified by `ht`.
@@ -78,8 +95,6 @@ int HT_destroy(HT* ht);
  */
 int HT_insert(HT* ht, void* data);
 
-void foo(HT* container, void (*print)(void* d));    
-
 /**
  * Removes the element matching `data` from the hash table specified by `ht`.
  * It is the responsibility of the caller to manage the storage associated with the data.
@@ -87,7 +102,7 @@ void foo(HT* container, void (*print)(void* d));
  * @return A pointer to the data that was stored in the removed element, or `NULL`
  * if no element with the specified `key` is found.
  */
-void* HT_remove(HT* ht, const void* data);
+int HT_remove(HT* ht, const void* src, void** dst);
 
 /**
  * Finds the element matching `data` in the hash table specified by `ht`.
@@ -98,6 +113,6 @@ void* HT_remove(HT* ht, const void* data);
  * 
  * @return A pointer to the found data, or `NULL` if the key was not found.
  */
-void* HT_lookup(const HT* ht, const void* data);
+int HT_lookup(const HT* ht, const void* src, void** dst);
 
 #endif /* _HASHTABLE_H */

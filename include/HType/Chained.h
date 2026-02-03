@@ -18,7 +18,7 @@
 
 struct hash_table {
 
-    int (*hash)(const void* key);
+    size_t (*hash)(const void* key);
     int (*match)(const void* key1, const void* key2);
     void (*destroy)(void* data);
 
