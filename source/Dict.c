@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/types.h>
 
 #include "../include/HType/Open.h"
 #include "../include/OAHT.h"
@@ -194,4 +195,10 @@ int Dict_lookup(const Dict* container, const char* key, void** result) {
 
     /* ======== */
     return CONTAINER_SUCCESS;
+}
+
+/* ================================================================ */
+
+ssize_t Dict_size(const Dict* dict) {
+    return HT_size(dict);
 }
